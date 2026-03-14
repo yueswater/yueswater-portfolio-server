@@ -22,14 +22,6 @@ jobs:
 
             - uses: google-github-actions/setup-gcloud@v2
 
-            - name: Create env.yaml
-              run: |
-                  printf '%s' "$ENV_YAML_B64" | base64 -d > env.yaml
-                  echo "--- env.yaml validation ---"
-                  python3 -c "import yaml; yaml.safe_load(open('env.yaml')); print('Valid YAML')"
-              env:
-                  ENV_YAML_B64: ${{ secrets.ENV_YAML_B64 }}
-
             - name: Deploy to Cloud Run
               run: |
                   gcloud run deploy yueswater-portfolio-server \
@@ -37,7 +29,6 @@ jobs:
                     --region asia-east1 \
                     --allow-unauthenticated \
                     --port 8080 \
-                    --env-vars-file env.yaml \
                     --memory 512Mi \
                     --timeout 300 \
                     --min-instances 0 \
