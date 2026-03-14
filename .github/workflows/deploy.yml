@@ -23,9 +23,9 @@ jobs:
             - uses: google-github-actions/setup-gcloud@v2
 
             - name: Create env.yaml
-              run: echo "$ENV_YAML" > env.yaml
+              run: echo "$ENV_YAML_B64" | base64 --decode > env.yaml
               env:
-                  ENV_YAML: ${{ secrets.ENV_YAML }}
+                  ENV_YAML_B64: ${{ secrets.ENV_YAML_B64 }}
 
             - name: Deploy to Cloud Run
               run: |
@@ -39,6 +39,7 @@ jobs:
                     --timeout 300 \
                     --min-instances 0 \
                     --max-instances 3 \
+                    --clear-base-image \
                     --project=yueswater-portfolio
 
             - name: Send failure email
