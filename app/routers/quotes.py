@@ -8,7 +8,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import ClientQuote, Service
 from app.schemas import ClientQuoteCreate, ClientQuoteOut, PasswordVerify
-from app.email_service import send_quote_confirmation
+from app.email_service import send_quote_confirmation, send_quote_admin_notification
 from app.routers.auth import get_current_admin
 from sqlalchemy import select, func
 
@@ -66,5 +66,21 @@ async def create_quote(data: ClientQuoteCreate, db: AsyncSession = Depends(get_d
         )
     except Exception as e:
         logger.error(f"寄送確認信失敗: {e}")
+
+    # Notify admin
+    try:
+        await send_quote_admin_notification(
+            client_name=data.client_name,
+            client_email=data.client_email,
+            client_phone=data.client_phone,
+            service_name=service.name,
+            budget_min=data.budget_min,
+            budget_max=data.budget_max,
+            expected_completion=data.expected_completion,
+            quote_number=quote.quote_number,
+            description=data.requirement,
+        )
+    except Exception as e:
+        logger.error(f"寄送管理員通知失敗: {e}")
 
     return quote

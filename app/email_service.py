@@ -123,6 +123,90 @@ async def send_case_created_email(
     )
 
 
+async def send_quote_admin_notification(
+    client_name: str,
+    client_email: str,
+    client_phone: str,
+    service_name: str,
+    budget_min: float,
+    budget_max: float | None,
+    expected_completion: str,
+    quote_number: str,
+    description: str,
+):
+    from html import escape
+    budget_str = f"NT$ {budget_min:,.0f}"
+    if budget_max:
+        budget_str += f" ~ NT$ {budget_max:,.0f}"
+    else:
+        budget_str += " 起"
+
+    html = f"""\
+    <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background: #f3f3f3; padding: 40px;">
+      <div style="background: #020202; color: #f3f3f3; padding: 32px; margin-bottom: 24px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">ANTHONY.</h1>
+      </div>
+      <div style="background: #fff; padding: 32px; border: 1px solid #e5e5e5;">
+        <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700;">收到新的客戶報價！</h2>
+        <p style="color: #020202; font-size: 18px; font-weight: 700; margin: 0 0 24px; letter-spacing: 1px;">
+          報價編號：{escape(quote_number)}
+        </p>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+          <tr style="border-bottom: 1px solid #e5e5e5;">
+            <td style="padding: 12px 0; font-weight: 600; width: 120px;">客戶姓名</td>
+            <td style="padding: 12px 0; color: #555;">{escape(client_name)}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e5e5;">
+            <td style="padding: 12px 0; font-weight: 600;">信箱</td>
+            <td style="padding: 12px 0; color: #555;">{escape(client_email)}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e5e5;">
+            <td style="padding: 12px 0; font-weight: 600;">電話</td>
+            <td style="padding: 12px 0; color: #555;">{escape(client_phone) if client_phone else '—'}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e5e5;">
+            <td style="padding: 12px 0; font-weight: 600;">選擇服務</td>
+            <td style="padding: 12px 0; color: #555;">{escape(service_name)}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e5e5;">
+            <td style="padding: 12px 0; font-weight: 600;">預算範圍</td>
+            <td style="padding: 12px 0; color: #555;">{budget_str}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e5e5;">
+            <td style="padding: 12px 0; font-weight: 600;">期望完成</td>
+            <td style="padding: 12px 0; color: #555;">{escape(expected_completion)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; font-weight: 600; vertical-align: top;">需求描述</td>
+            <td style="padding: 12px 0; color: #555; white-space: pre-wrap;">{escape(description) if description else '—'}</td>
+          </tr>
+        </table>
+        <a href="https://portfolio.yueswater.com/admin" style="display: inline-block; background: #020202; color: #f3f3f3; padding: 12px 32px; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px;">
+          前往後台查看
+        </a>
+      </div>
+      <p style="text-align: center; color: #999; font-size: 12px; margin-top: 24px;">
+        © 2026 Anthony. All rights reserved.
+      </p>
+    </div>
+    """
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"【新報價通知】{escape(client_name)} — {escape(service_name)} ({escape(quote_number)})"
+    msg["From"] = settings.SMTP_FROM
+    msg["To"] = settings.SMTP_FROM
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
+    await aiosmtplib.send(
+        msg,
+        hostname=settings.SMTP_HOST,
+        port=settings.SMTP_PORT,
+        start_tls=True,
+        username=settings.SMTP_USER,
+        password=settings.SMTP_PASSWORD,
+    )
+
+
 async def send_chat_notification(
     to_email: str,
     recipient_name: str,
