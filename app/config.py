@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = ""
     JWT_SECRET: str = ""
 
+    CORS_ORIGINS: str = "http://localhost:3000"
+
     class Config:
         env_file = ".env"
 
