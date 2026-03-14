@@ -1,0 +1,9 @@
+.env
+env.yaml
+.venv/
+__pycache__/
+*.pyc
+data.db
+uploads/
+.git/
+.gitignore
