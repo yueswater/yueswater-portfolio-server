@@ -36,10 +36,3 @@ app.include_router(cases.router)
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
-
-
-@app.get("/api/debug-cors")
-async def debug_cors():
-    raw = settings.CORS_ORIGINS
-    parsed = [o.strip() for o in raw.split(",")]
-    return {"raw": repr(raw), "parsed": parsed, "length": len(raw)}
