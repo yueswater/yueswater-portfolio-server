@@ -121,3 +121,53 @@ async def send_case_created_email(
         username=settings.SMTP_USER,
         password=settings.SMTP_PASSWORD,
     )
+
+
+async def send_chat_notification(
+    to_email: str,
+    recipient_name: str,
+    sender_label: str,
+    preview: str,
+    quote_number: str,
+):
+    from html import escape
+    html = f"""\
+    <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background: #f3f3f3; padding: 40px;">
+      <div style="background: #020202; color: #f3f3f3; padding: 32px; margin-bottom: 24px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">ANTHONY.</h1>
+      </div>
+      <div style="background: #fff; padding: 32px; border: 1px solid #e5e5e5;">
+        <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700;">您好，{escape(recipient_name)}！</h2>
+        <p style="color: #555; line-height: 1.8; margin: 0 0 16px;">
+          <strong>{escape(sender_label)}</strong> 在聊天室中發送了新訊息：
+        </p>
+        <div style="background: #f9f9f9; border-left: 4px solid #020202; padding: 16px; margin: 0 0 24px;">
+          <p style="margin: 0; color: #333; font-size: 15px; line-height: 1.6;">{escape(preview)}</p>
+        </div>
+        <p style="color: #999; font-size: 13px; margin: 0 0 8px;">
+          報價編號：{escape(quote_number)}
+        </p>
+        <a href="https://portfolio.yueswater.com/chat" style="display: inline-block; background: #020202; color: #f3f3f3; padding: 12px 32px; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; margin-top: 16px;">
+          前往聊天室
+        </a>
+      </div>
+      <p style="text-align: center; color: #999; font-size: 12px; margin-top: 24px;">
+        © 2026 Anthony. All rights reserved.
+      </p>
+    </div>
+    """
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"【Anthony】{escape(sender_label)} 發送了新訊息 — {escape(quote_number)}"
+    msg["From"] = settings.SMTP_FROM
+    msg["To"] = to_email
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
+    await aiosmtplib.send(
+        msg,
+        hostname=settings.SMTP_HOST,
+        port=settings.SMTP_PORT,
+        start_tls=True,
+        username=settings.SMTP_USER,
+        password=settings.SMTP_PASSWORD,
+    )

@@ -20,8 +20,13 @@ from app.schemas import (
     OfferResponseRequest, ChatRoomOut,
 )
 from app.services.storage import upload_image
+from app.email_service import send_chat_notification
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
+
+# In-memory debounce: track last email notification time per (room_id, recipient_type)
+_last_email_sent: dict[tuple[str, str], datetime] = {}
+EMAIL_DEBOUNCE_SECONDS = 300  # 5 minutes
 
 CHAT_IMAGE_BUCKET = "chat-images"
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
@@ -48,6 +53,11 @@ class ConnectionManager:
                     await ws.send_json(data)
                 except Exception:
                     pass
+
+    def is_peer_online(self, room_id: str, sender_type: str) -> bool:
+        """Check if the other side has an active WebSocket connection."""
+        peer = "client" if sender_type == "admin" else "admin"
+        return any(t == peer for _, t in self.rooms.get(room_id, []))
 
     async def send_to_type(self, room_id: str, sender_type: str, data: dict):
         for ws, t in self.rooms.get(room_id, []):
@@ -430,6 +440,44 @@ async def websocket_chat(ws: WebSocket, room_id: str, token: str = Query(...)):
                     await db.commit()
                     await db.refresh(msg)
                     await manager.broadcast(room_id, {"type": "message", **_msg_to_dict(msg)})
+
+                # Send email notification if peer is offline (with debounce)
+                if not manager.is_peer_online(room_id, sender_type):
+                    peer_type = "client" if sender_type == "admin" else "admin"
+                    debounce_key = (room_id, peer_type)
+                    now = datetime.now(timezone.utc).replace(tzinfo=None)
+                    last_sent = _last_email_sent.get(debounce_key)
+                    if not last_sent or (now - last_sent).total_seconds() >= EMAIL_DEBOUNCE_SECONDS:
+                        _last_email_sent[debounce_key] = now
+                        try:
+                            async with get_db_session() as db2:
+                                room = (await db2.execute(
+                                    select(ChatRoom).where(ChatRoom.id == room_id)
+                                )).scalar_one_or_none()
+                                if room:
+                                    quote = (await db2.execute(
+                                        select(ClientQuote).where(ClientQuote.id == room.quote_id)
+                                    )).scalar_one_or_none()
+                                    if quote:
+                                        preview = msg.content[:80] if msg.content else ("📷 圖片" if msg.message_type == "image" else "💰 報價")
+                                        if peer_type == "client":
+                                            await send_chat_notification(
+                                                to_email=quote.client_email,
+                                                recipient_name=quote.client_name,
+                                                sender_label="Anthony",
+                                                preview=preview,
+                                                quote_number=quote.quote_number,
+                                            )
+                                        else:
+                                            await send_chat_notification(
+                                                to_email=settings.SMTP_FROM,
+                                                recipient_name="Anthony",
+                                                sender_label=quote.client_name,
+                                                preview=preview,
+                                                quote_number=quote.quote_number,
+                                            )
+                        except Exception:
+                            logger.exception("Failed to send chat email notification")
 
             elif msg_type == "read":
                 async with get_db_session() as db:
