@@ -47,7 +47,8 @@ class ClientQuote(Base):
     requirement: Mapped[str] = mapped_column(Text)  # Markdown supported
     budget_min: Mapped[float] = mapped_column(Float)
     budget_max: Mapped[float | None] = mapped_column(Float, nullable=True)
-    expected_completion: Mapped[str] = mapped_column(String(50))
+    expected_start: Mapped[datetime] = mapped_column(DateTime)
+    expected_end: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now_utc)
 
 

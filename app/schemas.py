@@ -89,7 +89,8 @@ class ClientQuoteCreate(BaseModel):
     requirement: str
     budget_min: float
     budget_max: Optional[float] = None
-    expected_completion: str
+    expected_start: datetime
+    expected_end: Optional[datetime] = None
 
 
 class ClientQuoteOut(BaseModel):
@@ -102,7 +103,8 @@ class ClientQuoteOut(BaseModel):
     requirement: str
     budget_min: float
     budget_max: Optional[float]
-    expected_completion: str
+    expected_start: datetime
+    expected_end: Optional[datetime] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

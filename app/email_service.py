@@ -1,7 +1,11 @@
+
 import aiosmtplib
+from typing import Optional
+from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from app.config import settings
+from html import escape
 
 
 async def send_quote_confirmation(
@@ -10,7 +14,8 @@ async def send_quote_confirmation(
     service_name: str,
     budget_min: float,
     budget_max: float | None,
-    expected_completion: str,
+    expected_start: datetime,
+    expected_end: Optional[datetime],
     quote_number: str,
 ):
     budget_str = f"NT$ {budget_min:,.0f}"
@@ -18,6 +23,10 @@ async def send_quote_confirmation(
         budget_str += f" ~ NT$ {budget_max:,.0f}"
     else:
         budget_str += " 起"
+
+    timeline_str = expected_start.strftime("%Y-%m-%d")
+    if expected_end:
+        timeline_str += f" ~ {expected_end.strftime('%Y-%m-%d')}"
 
     html = f"""\
     <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background: #f3f3f3; padding: 40px;">
@@ -42,8 +51,8 @@ async def send_quote_confirmation(
             <td style="padding: 12px 0; color: #555;">{budget_str}</td>
           </tr>
           <tr>
-            <td style="padding: 12px 0; font-weight: 600;">期望完成</td>
-            <td style="padding: 12px 0; color: #555;">{expected_completion}</td>
+            <td style="padding: 12px 0; font-weight: 600;">期望時間</td>
+            <td style="padding: 12px 0; color: #555;">{timeline_str}</td>
           </tr>
         </table>
         <p style="color: #555; line-height: 1.8; margin: 0;">
@@ -123,6 +132,7 @@ async def send_case_created_email(
     )
 
 
+
 async def send_quote_admin_notification(
     client_name: str,
     client_email: str,
@@ -130,16 +140,20 @@ async def send_quote_admin_notification(
     service_name: str,
     budget_min: float,
     budget_max: float | None,
-    expected_completion: str,
     quote_number: str,
     description: str,
+    expected_start: datetime,
+    expected_end: Optional[datetime],
 ):
-    from html import escape
     budget_str = f"NT$ {budget_min:,.0f}"
     if budget_max:
         budget_str += f" ~ NT$ {budget_max:,.0f}"
     else:
         budget_str += " 起"
+
+    timeline_str = expected_start.strftime("%Y-%m-%d")
+    if expected_end:
+        timeline_str += f" ~ {expected_end.strftime('%Y-%m-%d')}"
 
     html = f"""\
     <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; background: #f3f3f3; padding: 40px;">
@@ -173,8 +187,8 @@ async def send_quote_admin_notification(
             <td style="padding: 12px 0; color: #555;">{budget_str}</td>
           </tr>
           <tr style="border-bottom: 1px solid #e5e5e5;">
-            <td style="padding: 12px 0; font-weight: 600;">期望完成</td>
-            <td style="padding: 12px 0; color: #555;">{escape(expected_completion)}</td>
+            <td style="padding: 12px 0; font-weight: 600;">期望時間</td>
+            <td style="padding: 12px 0; color: #555;">{timeline_str}</td>
           </tr>
           <tr>
             <td style="padding: 12px 0; font-weight: 600; vertical-align: top;">需求描述</td>

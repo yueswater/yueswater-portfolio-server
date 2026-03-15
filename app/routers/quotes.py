@@ -61,7 +61,8 @@ async def create_quote(data: ClientQuoteCreate, db: AsyncSession = Depends(get_d
             service_name=service.name,
             budget_min=data.budget_min,
             budget_max=data.budget_max,
-            expected_completion=data.expected_completion,
+                expected_start=data.expected_start,
+                expected_end=data.expected_end,
             quote_number=quote.quote_number,
         )
     except Exception as e:
@@ -76,7 +77,8 @@ async def create_quote(data: ClientQuoteCreate, db: AsyncSession = Depends(get_d
             service_name=service.name,
             budget_min=data.budget_min,
             budget_max=data.budget_max,
-            expected_completion=data.expected_completion,
+                expected_start=data.expected_start,
+                expected_end=data.expected_end,
             quote_number=quote.quote_number,
             description=data.requirement,
         )
